@@ -1,29 +1,35 @@
-name: CI/CD Polling App
+name: Docker CI/CD
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Клонирование репозитория
-        uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v3
 
-      - name: 🐳 Установка Docker и docker-compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install docker.io docker-compose -y
-          sudo systemctl start docker
-          sudo usermod -aG docker $USER
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
 
-      - name: 🔧 Построение и запуск docker-compose
-        run: |
-          docker-compose -f docker-compose.yml up --build -d
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: false
+        tags: local/dev:latest
 
-      - name: 🔍 Проверка статуса API
-        run: |
-          sleep 10  # ожидание запуска контейнеров
-          curl --fail http://localhost:8000/ || (echo "API не отвечает" && exit 1)
+    - name: Compose Up
+      run: docker compose up -d --build
+
+
+
+
+    - name: 🐳 Установка Docker и docker-compose
+      run: curl -fsSL https://get.docker.com -o get-docker.shsh get-docker.sh
+        sudo apt-get install docker-compose-plugin -y
+
