@@ -1,23 +1,29 @@
-name: Polling App CI
+name: CI/CD Polling App
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+      - name: 📥 Клонирование репозитория
+        uses: actions/checkout@v3
 
-    - name: Set up Docker
-      uses: docker/setup-buildx-action@v2
+      - name: 🐳 Установка Docker и docker-compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install docker.io docker-compose -y
+          sudo systemctl start docker
+          sudo usermod -aG docker $USER
 
-    - name: Compose Build
-      run: docker-compose -f docker-compose.yml build
+      - name: 🔧 Построение и запуск docker-compose
+        run: |
+          docker-compose -f docker-compose.yml up --build -d
 
-    - name: Compose Up
-      run: docker-compose -f docker-compose.yml up -d
+      - name: 🔍 Проверка статуса API
+        run: |
+          sleep 10  # ожидание запуска контейнеров
+          curl --fail http://localhost:8000/ || (echo "API не отвечает" && exit 1)
